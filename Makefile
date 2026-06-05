@@ -56,7 +56,7 @@ export OOC_JOBS
 all:
 	$(MAKE) synth
 	$(MAKE) impl
-	$(MAKE) hdf
+	$(MAKE) xsa
  
 vivado: custom_ips 
 	@echo Creating Vivado Project 
@@ -92,12 +92,9 @@ impl:
 
 
 
-hdf:
-	@echo Exporting HDF file ....
-	@test -s ${VIVADO_WORK_DIR}/${VIVADO_PROJECT_NAME}.runs/impl_1/${DESIGN}_wrapper.sysdef || { echo "system definistion file does not exist! Exiting..."; false; } && \
-	                 mkdir -p ${VIVADO_WORK_DIR}/${VIVADO_PROJECT_NAME}.sdk && \
-	                 cp ${VIVADO_WORK_DIR}/${VIVADO_PROJECT_NAME}.runs/impl_1/${DESIGN}_wrapper.sysdef ${VIVADO_WORK_DIR}/${VIVADO_PROJECT_NAME}.sdk/${DESIGN}_wrapper.hdf
-	@echo HDF file is created as ${VIVADO_WORK_DIR}/${VIVADO_PROJECT_NAME}.sdk/${DESIGN}_wrapper.hdf
+xsa:
+	@echo Exporting XSA file ....
+	vivado -mode batch -source tcls/run-xsa.tcl -nolog -nojournal
 
 
 custom_ips:

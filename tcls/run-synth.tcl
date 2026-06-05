@@ -21,15 +21,23 @@ set_msg_config -id {[Synth 8-5858]} -new_severity "info"
 set_msg_config -id {[Synth 8-4480]} -limit 1000
 
 
+# Standalone XCI IPs must be available before BD IP read_xci
+if {[file exists tcls/add-xci-sources.tcl]} {
+    source tcls/add-xci-sources.tcl
+}
+
 FM::read_xci
+
+# Ensure the BD HDL wrapper is generated, tracked by sources_1, and selected as top.
+FM::refresh_bd_wrapper
 
 update_ip_catalog
 update_compile_order -fileset sources_1
 
 #synth_design -rtl -name rtl_1 -verbose 
 
-set_property STEPS.SYNTH_DESIGN.ARGS.RETIMING true [get_runs synth_1]
-set_property strategy {Vivado Synthesis Defaults} [get_runs synth_1]
+#set_property STEPS.SYNTH_DESIGN.ARGS.RETIMING true [get_runs synth_1]
+set_property strategy {Flow_PerfOptimized_high} [get_runs synth_1]
 
 reset_run synth_1
 

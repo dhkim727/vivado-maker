@@ -92,14 +92,9 @@ source $FM::BD_TCL_FILE
 #if your design does not include block design, you must specify the top module of your design here:
 # set_property top <the entity name of your top module hdl code> [current_fileset]
 
-# if your design contains block design, it is better to automatically create the wrapper for it and make it top module:
-make_wrapper -files [get_files $FM::VIVADO_PROJECT/$FM::VIVADO_PROJECT_NAME.srcs/sources_1/bd/$FM::DESIGN_NAME/$FM::DESIGN_NAME.bd] -top
-if {[get_property target_language [current_project]] eq "VHDL"} {
-      add_files -norecurse  $FM::VIVADO_PROJECT/$FM::VIVADO_PROJECT_NAME.srcs/sources_1/bd/$FM::DESIGN_NAME/hdl/${FM::DESIGN_NAME}_wrapper.vhd
-} else {
-      add_files -norecurse  $FM::VIVADO_PROJECT/$FM::VIVADO_PROJECT_NAME.srcs/sources_1/bd/$FM::DESIGN_NAME/hdl/${FM::DESIGN_NAME}_wrapper.v
-}
-update_compile_order -fileset sources_1
+# If your design contains a block design, automatically create or refresh the
+# HDL wrapper, add it to the project if needed, and make it the top module.
+FM::refresh_bd_wrapper
 
 exit
 ##################################################################################

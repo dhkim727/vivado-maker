@@ -26,6 +26,63 @@ namespace eval ::FM {
       		put $FM::OOC_MAX_JOBS
 	}
 
+	proc refresh_bd_wrapper {} {
+		set bd_file $FM::VIVADO_PROJECT/$FM::VIVADO_PROJECT_NAME.srcs/sources_1/bd/$FM::DESIGN_NAME/$FM::DESIGN_NAME.bd
+
+		if {![file exists $bd_file]} {
+			catch {common::send_msg_id "FM-004" "ERROR" "BD file does not exist: $bd_file"}
+			exit 1
+		}
+
+		catch {save_bd_design}
+
+		set bd_files [get_files -quiet $bd_file]
+		if {$bd_files eq ""} {
+			set bd_files [get_files -quiet -of_objects [get_filesets sources_1] *$FM::DESIGN_NAME.bd]
+		}
+		if {$bd_files eq ""} {
+			set bd_files [get_files -quiet *$FM::DESIGN_NAME.bd]
+		}
+		if {$bd_files eq ""} {
+			catch {common::send_msg_id "FM-005" "ERROR" "BD file is not tracked by project sources_1: $bd_file"}
+			exit 1
+		}
+
+		put "Refresh Block Design HDL wrapper for: $bd_file"
+		make_wrapper -files $bd_files -top -force
+
+		if {[get_property target_language [current_project]] eq "VHDL"} {
+			set wrapper_ext vhd
+		} else {
+			set wrapper_ext v
+		}
+
+		set wrapper_candidates [list \
+			$FM::VIVADO_PROJECT/$FM::VIVADO_PROJECT_NAME.gen/sources_1/bd/$FM::DESIGN_NAME/hdl/${FM::DESIGN_NAME}_wrapper.$wrapper_ext \
+			$FM::VIVADO_PROJECT/$FM::VIVADO_PROJECT_NAME.srcs/sources_1/bd/$FM::DESIGN_NAME/hdl/${FM::DESIGN_NAME}_wrapper.$wrapper_ext \
+		]
+
+		set wrapper_file ""
+		foreach wrapper_candidate $wrapper_candidates {
+			if {[file exists $wrapper_candidate]} {
+				set wrapper_file $wrapper_candidate
+				break
+			}
+		}
+
+		if {$wrapper_file ne ""} {
+			if {[get_files -quiet $wrapper_file] eq ""} {
+				add_files -fileset sources_1 -norecurse $wrapper_file
+			}
+			set_property top ${FM::DESIGN_NAME}_wrapper [get_filesets sources_1]
+			update_compile_order -fileset sources_1
+			set_property top ${FM::DESIGN_NAME}_wrapper [get_filesets sources_1]
+		} else {
+			catch {common::send_msg_id "FM-006" "ERROR" "BD wrapper file was not created. Checked paths: [join $wrapper_candidates {, }]"}
+			exit 1
+		}
+	}
+
 	 # Process to import xci files to the project, and generate
 	 # Out of Context (OOC) output products for each IP that is used in the bd design.
 	proc run_ooc_ips {} {
@@ -42,6 +99,8 @@ namespace eval ::FM {
 	                catch {export_ip_user_files -of_objects $bd_files -no_script -sync -force -quiet}
 	            }
 	        }
+
+	        FM::refresh_bd_wrapper
 
 	        set ip_names {}
 	        catch {set ip_names [get_ips]}
@@ -96,10 +155,14 @@ namespace eval ::FM {
 	proc read_xci {} {
 	                if {[file exists $FM::VIVADO_PROJECT/$FM::VIVADO_PROJECT_NAME.srcs/sources_1/bd/$FM::DESIGN_NAME/ip]} {
                         update_compile_order -fileset sources_1
+                        set ip_names {}
                         catch {set ip_names [get_ips]}
                         foreach ip $ip_names {
-                                put ${ip}
-	                                read_ip $FM::VIVADO_PROJECT/$FM::VIVADO_PROJECT_NAME.srcs/sources_1/bd/$FM::DESIGN_NAME/ip/${ip}/${ip}.xci
+                                set ip_xci $FM::VIVADO_PROJECT/$FM::VIVADO_PROJECT_NAME.srcs/sources_1/bd/$FM::DESIGN_NAME/ip/${ip}/${ip}.xci
+                                if {[file exists $ip_xci]} {
+                                        put ${ip}
+                                        read_ip $ip_xci
+                                }
                         }
                 }
         }
