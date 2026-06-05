@@ -52,16 +52,42 @@ foreach xci_file $xci_files {
       puts "Reading standalone XCI source: $xci_file"
       set old_pwd [pwd]
       set xci_abs_file [file normalize $xci_file]
-      cd [file dirname $xci_abs_file]
-      read_ip $xci_abs_file
+      set xci_src_dir [file dirname $xci_abs_file]
+      set xci_name [file rootname [file tail $xci_abs_file]]
+      set project_ip_dir [file normalize $FM::VIVADO_PROJECT/$FM::VIVADO_PROJECT_NAME.srcs/sources_1/ip/$xci_name]
+      set project_xci_file [file normalize $project_ip_dir/[file tail $xci_abs_file]]
 
-      set xci_ip_file [get_files -quiet $xci_abs_file]
+      file mkdir $project_ip_dir
+
+      foreach local_file [glob -nocomplain -directory $xci_src_dir *] {
+            if {![file isdirectory $local_file]} {
+                  file copy -force $local_file $project_ip_dir/[file tail $local_file]
+            }
+      }
+
+      if {[file exists $project_xci_file]} {
+            set xci_fd [open $project_xci_file r]
+            set xci_content [read $xci_fd]
+            close $xci_fd
+
+            set xci_content [string map [list \
+                  "../../../../m1_giga_merge.gen" "../../../../$FM::VIVADO_PROJECT_NAME.gen" \
+            ] $xci_content]
+
+            set xci_fd [open $project_xci_file w]
+            puts -nonewline $xci_fd $xci_content
+            close $xci_fd
+      }
+
+      read_ip $project_xci_file
+
+      set xci_ip_file [get_files -quiet $project_xci_file]
       if {$xci_ip_file ne ""} {
-            puts "Generating standalone XCI output products: $xci_abs_file"
+            puts "Generating standalone XCI output products: $project_xci_file"
             generate_target all $xci_ip_file
             catch {export_ip_user_files -of_objects $xci_ip_file -no_script -sync -force -quiet}
       } else {
-            catch {common::send_msg_id "FM-003" "WARNING" "Unable to find standalone XCI in project after read_ip: $xci_abs_file"}
+            catch {common::send_msg_id "FM-003" "WARNING" "Unable to find standalone XCI in project after read_ip: $project_xci_file"}
       }
 
       cd $old_pwd
