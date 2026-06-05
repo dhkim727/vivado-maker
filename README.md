@@ -222,9 +222,7 @@ Here is the project directory structure tree:
           │         └── m1p/
           │             └── system/
           │     
-          ├── constraints/                         # The constraint files (*.xdc) are stored in this folder.
-          │     ├── m1_constraints.xdc             # board-level constraints
-          │     ├── m1p_constraints.xdc            # board-level constraints
+          ├── constraints/                         # Only *.xdc files under constraints/<BOARD>/ are added.
           │     ├── m1/
           │     │   └── system/
           │     └── m1p/

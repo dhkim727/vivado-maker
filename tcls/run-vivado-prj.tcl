@@ -25,20 +25,31 @@ reset_project
 put $FM::PART_NAME
 put $FM::BOARD_NAME
 
-if {$FM::BOARD_NAME == "m1p"} {
-      add_files -fileset constrs_1 -norecurse constraints/m1p_constraints.xdc
-} elseif {$FM::BOARD_NAME == "m1"} {
-      add_files -fileset constrs_1 -norecurse constraints/m1_constraints.xdc
-} else {
-	exit 1
+proc fm_collect_xdc_files_recursive {root_dir} {
+      set collected_files {}
+
+      if {![file exists $root_dir]} {
+            return $collected_files
+      }
+
+      foreach entry [glob -nocomplain -directory $root_dir *] {
+            if {[file isdirectory $entry]} {
+                  set child_files [fm_collect_xdc_files_recursive $entry]
+                  foreach child_file $child_files {
+                        lappend collected_files $child_file
+                  }
+            } elseif {[string tolower [file extension $entry]] eq ".xdc"} {
+                  lappend collected_files $entry
+            }
+      }
+
+      return [lsort -unique $collected_files]
 }
 
-set design_constraint_dir constraints/$FM::BOARD_NAME/$FM::DESIGN_NAME
-if {[file exists $design_constraint_dir]} {
-      set design_xdc_files [glob -nocomplain $design_constraint_dir/*.xdc]
-      if {[llength $design_xdc_files] > 0} {
-            add_files -fileset constrs_1 -norecurse $design_xdc_files
-      }
+set board_constraint_dir constraints/$FM::BOARD_NAME
+set board_xdc_files [fm_collect_xdc_files_recursive $board_constraint_dir]
+if {[llength $board_xdc_files] > 0} {
+      add_files -fileset constrs_1 -norecurse $board_xdc_files
 }
 	        
 			     		       
@@ -47,6 +58,12 @@ set_property  ip_repo_paths  { \
                               ips \
                               } [current_fileset]
 update_ip_catalog
+
+# Standalone XCI IPs must be read before RTL sources when RTL instantiates IP
+# modules generated from XCI files.
+if {[file exists tcls/add-xci-sources.tcl]} {
+      source tcls/add-xci-sources.tcl
+}
 
 # RTL module references used inside a BD Tcl must be resolvable before the BD Tcl
 # is sourced. Optional source roots are managed in tcls/add-rtl-sources.tcl.
