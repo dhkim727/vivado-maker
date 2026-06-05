@@ -8,7 +8,7 @@
 # by the user through the $BOARD.
 # The following environment variable can be set by the user:
 BOARD			?= m1p
-DESIGN			?= main_design
+DESIGN			?= system
 export VIVADO_VERSION  ?=2025.2
 # VIVADO_VERSION  ?=2020.2
 HDL_LANGUAGE    ?= VERILOG

@@ -90,7 +90,7 @@ Two tcl files named **run-vivado-prj** and **run-bd.tcl**, the **"src"** and its
 
   - **gen-bd-tcl.tcl**: This is responsible to create a tcl file from the current block design file (\*.bd), which must be the only source file related to the block design and pushed into the repository. Consequently, it is important that this tcl is run before any commits otherwise, the updates on the block design (\*.bd) file are not made visible and pushed into the remote git repository. Note: It is a must to run this command before any pushes. This tcl is a static tcl file.
 
-  - **design-bd-src.tcl**: This is the result of running the **gen-bd-tcl.tcl** file. This tcl file is always updated (over-written), by running the **gen-bd-tcl.tcl**. This tcl is considered a variable tcl file unlike the two other previous tcl files.
+  - **tcls/bd/<BOARD>/<DESIGN>/design-bd-src.tcl**: This is the result of running the **gen-bd-tcl.tcl** file. This tcl file is always updated (over-written), by running the **gen-bd-tcl.tcl**. This tcl is considered a variable tcl file unlike the two other previous tcl files. Block design Tcl files are organized by board and design name.
 
 
 ### Working with the make commands
@@ -101,18 +101,18 @@ Note: Make sure before issuing the following commands (main vivado project contr
 Because, the **design-bd-src.tcl**  uses their path to instantiate them into the block design of the project.
 
 
-  * The following command launches the vivado tool in batch mode and executes the "run-vivado-prj.tcl file which, in turn creates a vivado project and sets the target platform to the specified BOARD (e.g., here it is the board1). In the run-vivado-prj.tcl, it also includes the "design-bd-src.tcl", to generate the block design (\*.bd) file. If your vivado project is already created, the terminal prints the message, and this is discarded. 
+  * The following command launches the vivado tool in batch mode and executes the "run-vivado-prj.tcl file which, in turn creates a vivado project and sets the target platform to the specified BOARD and DESIGN. In the run-vivado-prj.tcl, it also includes `tcls/bd/<BOARD>/<DESIGN>/design-bd-src.tcl`, to generate the block design (\*.bd) file. If your vivado project is already created, the terminal prints the message, and this is discarded. 
 
 
 ```
-  make vivado BOARD=board1     
+  make vivado BOARD=m1p DESIGN=system
 ```
 
   * If you already have created the viado project locally, during the developement of the project, you can update 
-  the **design-bd-src.tcl** (regenerate), by issuing the following command. The following command will regenerate the "design-bd-src.tcl" file based on the current block design, located into the  board1-vivado/board1-vivado.srcs/bd/. Remember if you do not issue this command, after pushing your repository, your updates applied on the block design previously will not be visible for the remote repository. 
+  the board/design-specific **design-bd-src.tcl** (regenerate), by issuing the following command. The following command will regenerate `tcls/bd/<BOARD>/<DESIGN>/design-bd-src.tcl` based on the current block design located in the generated Vivado project. Remember if you do not issue this command, after pushing your repository, your updates applied on the block design previously will not be visible for the remote repository. 
 
 ```
-  make update_tcl BOARD=board1                       
+  make update_tcl BOARD=m1p DESIGN=system
 ```
  
  
@@ -149,7 +149,14 @@ Here is the project directory structure tree:
           ├── Makefile                             # Main Makefile of the project  
           ├── tcls/                                # tcl scripts to control the flow of the project
           │     │
-          │     ├── design-bd-src.tcl                                       
+          │     ├── add-rtl-sources.tcl
+          │     ├── bd/
+          │     │   ├── m1/
+          │     │   │   └── system/
+          │     │   │       └── design-bd-src.tcl
+          │     │   └── m1p/
+          │     │       └── system/
+          │     │           └── design-bd-src.tcl
           │     ├── gen-bd-tcl.tcl
           │     ├── run-impl.tcl 
           │     ├── run-ooc.tcl 
@@ -192,21 +199,36 @@ Here is the project directory structure tree:
           │   └── work-fpga                        # Untracked generated IPs in vhdl form.                                            
           │                                       
           │   
-          ├── srcs/                                # Possible source files: *.v, *.hdl, *.sv, *.bd, the old block design, and UI (the layout of block design)
+          ├── srcs/                                # Possible source files: *.v, *.hdl, *.sv, *.bd backups, and UI layout files
           │    │                                   # are stored here.
           │    │     
-          │    ├──  bd_old/                        # when issuing "make update_tcl", before updateing the "design-bd-src.tcl", 
-          │    │                                   # the current bd file is copied to this folder.
-          │    │                                    
-          │    │                                    
-          │    │                                       
-          │    │ 
-          │    │ 
-          │    └──  stored_ui/                     # the saved/ordered *.ui file which defines the layout of the block design. 
-          │             │                          # after generating *.bd from the "gen-bd-tcl.tcl", this file is copied into the  
-          │             └──  *.ui                  # board1-vivado.srcs/source_1/bd/my_bd/ui/ 
+          │    ├──  rtl/                           # board/design-specific RTL module-reference sources
+          │    │    ├── common/
+          │    │    ├── m1/
+          │    │    │   └── system/
+          │    │    └── m1p/
+          │    │        └── system/
+          │    │            └── include/
+          │    │
+          │    ├──  bd_old/                        # when issuing "make update_tcl", before updating the board/design-specific
+          │    │    ├── m1/                        # "design-bd-src.tcl", the current bd file is copied here.
+          │    │    │   └── system/
+          │    │    └── m1p/
+          │    │        └── system/
+          │    │
+          │    └──  stored_ui/                     # saved/ordered *.ui files which define the layout of the block design.
+          │         ├── m1/
+          │         │   └── system/
+          │         └── m1p/
+          │             └── system/
           │     
-          ├── constraints/                         # The constraint files (*.xdc) are stored in this folder.     
+          ├── constraints/                         # The constraint files (*.xdc) are stored in this folder.
+          │     ├── m1_constraints.xdc             # board-level constraints
+          │     ├── m1p_constraints.xdc            # board-level constraints
+          │     ├── m1/
+          │     │   └── system/
+          │     └── m1p/
+          │         └── system/
           │     
           |
           └── vivado-prj/                          # Untracked generated files, but not considered as part of clean.
@@ -217,7 +239,7 @@ Here is the project directory structure tree:
               ├── board1-vivado.srcs/
               │    ├── sources_1/
               │    │    ├── bd/                                         # BDs are regenerated from script
-              │    │    │    ├── bd/hdl/main_design_wrapper.{v,vhd}     # BD wrappers are also regenerated
+              │    │    │    ├── bd/hdl/system_wrapper.{v,vhd}     # BD wrappers are also regenerated
               │    │    │    └── ...
               │    │    └── ...
               │    └── ...

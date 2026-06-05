@@ -31,13 +31,28 @@ if {$FM::BOARD_NAME == "m1p"} {
       add_files -fileset constrs_1 -norecurse constraints/m1_constraints.xdc
 } else {
 	exit 1
-}      	        
+}
+
+set design_constraint_dir constraints/$FM::BOARD_NAME/$FM::DESIGN_NAME
+if {[file exists $design_constraint_dir]} {
+      set design_xdc_files [glob -nocomplain $design_constraint_dir/*.xdc]
+      if {[llength $design_xdc_files] > 0} {
+            add_files -fileset constrs_1 -norecurse $design_xdc_files
+      }
+}
+	        
 			     		       
 # you should put all your custom IPs into the folder "ips"
 set_property  ip_repo_paths  { \
                               ips \
                               } [current_fileset]
 update_ip_catalog
+
+# RTL module references used inside a BD Tcl must be resolvable before the BD Tcl
+# is sourced. Optional source roots are managed in tcls/add-rtl-sources.tcl.
+if {[file exists tcls/add-rtl-sources.tcl]} {
+      source tcls/add-rtl-sources.tcl
+}
 
 # If your project has a block design, source the board/design-specific BD Tcl here.
 if {![file exists $FM::BD_TCL_FILE]} {
