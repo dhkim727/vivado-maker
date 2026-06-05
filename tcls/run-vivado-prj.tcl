@@ -25,14 +25,10 @@ reset_project
 put $FM::PART_NAME
 put $FM::BOARD_NAME
 
-if {$FM::BOARD_NAME == "board1"} {
-      add_files -fileset constrs_1 -norecurse constraints/board1_constraints.xdc
-} elseif {$FM::BOARD_NAME == "board2"} {
-      add_files -fileset constrs_1 -norecurse constraints/board2_constraints.xdc
-} elseif {$FM::BOARD_NAME == "au55c"} {
-      add_files -fileset constrs_1 -norecurse constraints/U55C_xdc_1v00.xdc
-} elseif {$FM::BOARD_NAME == "m1p"} {
+if {$FM::BOARD_NAME == "m1p"} {
       add_files -fileset constrs_1 -norecurse constraints/m1p_constraints.xdc
+} elseif {$FM::BOARD_NAME == "m1"} {
+      add_files -fileset constrs_1 -norecurse constraints/m1_constraints.xdc
 } else {
 	exit 1
 }      	        

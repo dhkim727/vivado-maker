@@ -39,7 +39,7 @@ wait_on_run synth_1
 open_run synth_1
 
 set report_dir $FM::VIVADO_PROJECT/reports
-file mkdir -force $report_dir
+file mkdir $report_dir
 file delete -force $report_dir/*
 
 check_timing -verbose                                                   -file $report_dir/check_timing.rpt

@@ -37,7 +37,7 @@ write_sdf     -force $FM::VIVADO_PROJECT/$FM::VIVADO_PROJECT_NAME.timesim.sdf
 #
 # # reports
 set report_dir $FM::VIVADO_PROJECT/reports
-file mkdir -force $report_dir
+file mkdir $report_dir
 file delete -force $report_dir/*
 check_timing                                                              -file $report_dir/check_timing.rpt
 report_timing -max_paths 100 -nworst 100 -delay_type max -sort_by slack   -file $report_dir/timing_WORST_100.rpt

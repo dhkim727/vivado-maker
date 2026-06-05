@@ -4,13 +4,15 @@
 # COMPANY: UNISI 
 #
 ################################################
-export XILINX_PART=xczu9eg-ffvc900-1-i-es1	
-export VIVADO_VERSION=2016.3
+export BOARD=m1p
+export XILINX_PART=xcku060-ffva1156-1-i
+export VIVADO_VERSION=2025.2
 echo chosen fpga part number = $XILINX_PART
 echo Vivado Version = $VIVADO_VERSION
-export CLK_PERIOD_NS=20
+export CLK_PERIOD_NS=10
 export HDL_LANGUAGE=verilog
 
+echo chosen board = $BOARD
 echo set clock period for hls ips = $CLK_PERIOD_NS ns
 echo set generated rtl language for hls ips = $HDL_LANGUAGE
 

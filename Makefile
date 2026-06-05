@@ -7,28 +7,18 @@
 # implementation, bitstream generation, report generation, for target board defined
 # by the user through the $BOARD.
 # The following environment variable can be set by the user:
-#BOARD          ?= au55c
 BOARD			?= m1p
 DESIGN			?= main_design
-#BOARD          ?= board2
-#BOARD          ?= board3
 export VIVADO_VERSION  ?=2025.2
 # VIVADO_VERSION  ?=2020.2
 HDL_LANGUAGE    ?= VERILOG
 OOC_JOBS        ?= 16
 # setting additional xilinx board parameters for the selected board
-ifeq ($(BOARD), board1)
-	XILINX_PART              := xczu9eg-ffvc900-1-i-es1
-	CLK_PERIOD_NS            := 20
-else ifeq ($(BOARD), board2)
-	XILINX_PART              := xczu9eg-ffvc900-1-e-es2
-	CLK_PERIOD_NS            := 20
-else ifeq  ($(BOARD), au55c)
-	XILINX_PART              := xcu55c-fsvh2892-2L-e
-	XILINX_BOARD             := xilinx.com:au55c:part0:1.0
-	CLK_PERIOD_NS            := 20
-else ifeq  ($(BOARD), m1p)
+ifeq ($(BOARD), m1p)
 	XILINX_PART 			 := xcku060-ffva1156-1-i
+	CLK_PERIOD_NS			 := 10
+else ifeq  ($(BOARD), m1)
+	XILINX_PART 			 := xcau25p-ffvb676-2-i
 	CLK_PERIOD_NS			 := 10
 else
 $(error Unknown board - please specify a supported FPGA board)
