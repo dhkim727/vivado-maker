@@ -22,6 +22,14 @@ set_msg_config -id {[Synth 8-5858]} -new_severity "info"
 set_msg_config -id {[Synth 8-4480]} -limit 1000
  
 FM::print_gvars
+
+# Standalone XCI IPs used by RTL inside BD module references must be available
+# before BD IP OOC runs are launched. For example, dec2_filter.sv instantiates
+# fir_2dec from srcs/xci/<BOARD>/<DESIGN>/fir_2dec/fir_2dec.xci.
+if {[file exists tcls/add-xci-sources.tcl]} {
+    source tcls/add-xci-sources.tcl
+}
+
 FM::run_ooc_ips
 
 exit

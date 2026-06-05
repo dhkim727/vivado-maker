@@ -31,28 +31,65 @@ namespace eval ::FM {
 	proc run_ooc_ips {} {
 	    
 	    if {[file exists $FM::VIVADO_PROJECT/$FM::VIVADO_PROJECT_NAME.srcs/sources_1/bd/$FM::DESIGN_NAME/ip]} {
+	        set bd_file $FM::VIVADO_PROJECT/$FM::VIVADO_PROJECT_NAME.srcs/sources_1/bd/$FM::DESIGN_NAME/$FM::DESIGN_NAME.bd
 	        update_compile_order -fileset sources_1
+
+	        if {[file exists $bd_file]} {
+	            put "Generate Block Design output products for: $bd_file"
+	            set bd_files [get_files -quiet $bd_file]
+	            if {$bd_files ne ""} {
+	                generate_target all $bd_files
+	                catch {export_ip_user_files -of_objects $bd_files -no_script -sync -force -quiet}
+	            }
+	        }
+
+	        set ip_names {}
 	        catch {set ip_names [get_ips]}
-	        set i 0
-	         foreach ip $ip_names {
-		           ## gets IPs name as they are instantiated, and the corresponding *.xci files are generated. 
-		           if {[file exists $FM::VIVADO_PROJECT/$FM::VIVADO_PROJECT_NAME.srcs/sources_1/bd/$FM::DESIGN_NAME/ip/${ip}/${ip}.xci] && 
-		               ![file exists $FM::VIVADO_PROJECT/$FM::VIVADO_PROJECT_NAME.runs/${ip}_synth_1/runme.log]  } {
+	        set ooc_max_jobs $FM::OOC_MAX_JOBS
+	        if {$ooc_max_jobs < 1} {
+	            set ooc_max_jobs 1
+	        }
+	        set active_ooc_runs {}
+	        foreach ip $ip_names {
+		           ## gets IPs name as they are instantiated, and the corresponding *.xci files are generated.
+		           set ip_xci $FM::VIVADO_PROJECT/$FM::VIVADO_PROJECT_NAME.srcs/sources_1/bd/$FM::DESIGN_NAME/ip/${ip}/${ip}.xci
+		           if {[file exists $ip_xci]} {
+		             set ip_file [get_files -quiet -of_objects [get_fileset sources_1] $ip_xci]
+		             if {$ip_file eq ""} {
+		               set ip_file [get_files -quiet $ip_xci]
+		             }
+		             if {$ip_file eq ""} {
+		               read_ip $ip_xci
+		               set ip_file [get_files -quiet $ip_xci]
+		             }
+
+		             if {$ip_file eq ""} {
+		               catch {common::send_msg_id "FM-002" "WARNING" "Unable to find IP file in project: $ip_xci"}
+		               continue
+		             }
+
+		             if {[get_property generate_synth_checkpoint $ip_file] == 1 && [get_property is_enabled $ip_file] == 1} {
 		           	put "Run OOC (Out of Context) IP for: $ip"
-		             if {[get_property generate_synth_checkpoint [get_files ${ip}.xci]] == 1 && [get_property is_enabled [get_files ${ip}.xci]] == 1} {
-		               create_ip_run [get_files -of_objects [get_fileset sources_1] $FM::VIVADO_PROJECT/$FM::VIVADO_PROJECT_NAME.srcs/sources_1/bd/$FM::DESIGN_NAME/ip/${ip}/${ip}.xci]  
+		               if {[get_runs -quiet ${ip}_synth_1] eq ""} {
+		                 create_ip_run $ip_file
+		               }
 		               # it is important to reset the synth_1 before launching the run.
 			       reset_run ${ip}_synth_1
-			       launch_run -jobs 8 ${ip}_synth_1  
-		               if {$i eq ($FM::OOC_MAX_JOBS-1)} {
-		               	wait_on_run  ${ip}_synth_1
-		               	set i 0	
-		               } else {
-		               	incr i
+			       launch_run -jobs 8 ${ip}_synth_1
+		               lappend active_ooc_runs ${ip}_synth_1
+		               if {[llength $active_ooc_runs] >= $ooc_max_jobs} {
+		                 foreach active_ooc_run $active_ooc_runs {
+		                   wait_on_run $active_ooc_run
+		                 }
+		                 set active_ooc_runs {}
 		               }
 		             }
 		           }
-	         }
+	        }
+
+	        foreach active_ooc_run $active_ooc_runs {
+	          wait_on_run $active_ooc_run
+	        }
 	    }
 	}
 

@@ -54,6 +54,16 @@ foreach xci_file $xci_files {
       set xci_abs_file [file normalize $xci_file]
       cd [file dirname $xci_abs_file]
       read_ip $xci_abs_file
+
+      set xci_ip_file [get_files -quiet $xci_abs_file]
+      if {$xci_ip_file ne ""} {
+            puts "Generating standalone XCI output products: $xci_abs_file"
+            generate_target all $xci_ip_file
+            catch {export_ip_user_files -of_objects $xci_ip_file -no_script -sync -force -quiet}
+      } else {
+            catch {common::send_msg_id "FM-003" "WARNING" "Unable to find standalone XCI in project after read_ip: $xci_abs_file"}
+      }
+
       cd $old_pwd
 }
 
