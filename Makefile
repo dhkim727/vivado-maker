@@ -12,7 +12,7 @@ DESIGN			?= system
 export VIVADO_VERSION  ?=2025.2
 # VIVADO_VERSION  ?=2020.2
 HDL_LANGUAGE    ?= VERILOG
-OOC_JOBS        ?= 16
+OOC_JOBS        ?= 20
 # setting additional xilinx board parameters for the selected board
 ifeq ($(BOARD), m1p)
 	XILINX_PART 			 := xcku060-ffva1156-1-i
@@ -53,7 +53,10 @@ export BD_TCL_FILE
 export HDL_LANGUAGE
 export OOC_JOBS
 
-all: impl
+all:
+	$(MAKE) synth
+	$(MAKE) impl
+	$(MAKE) hdf
  
 vivado: custom_ips 
 	@echo Creating Vivado Project 
@@ -72,18 +75,19 @@ update_tcl:
 	@if [ -d ${VIVADO_WORK_DIR}/${VIVADO_PROJECT_NAME}.srcs/sources_1/bd/${DESIGN}/ui ]; then cp ${VIVADO_WORK_DIR}/${VIVADO_PROJECT_NAME}.srcs/sources_1/bd/${DESIGN}/ui/* srcs/stored_ui/${BOARD}/${DESIGN}/ 2>/dev/null || true; fi
 	vivado -mode batch -source tcls/gen-bd-tcl.tcl  -nolog -nojournal
 
-ip_ooc: vivado
-	@echo Synthesizing the project
+ip_ooc:
+	@echo Running IP OOC for existing Vivado project
 	@cd ${VIVADO_WORK_DIR}
 	vivado -mode batch -source tcls/run-ooc.tcl -nolog -nojournal 
 	wait; 
 
-synth: ip_ooc
-	@echo Synthesizing the project
+synth:
+	@echo Running OOC and synthesizing existing Vivado project
+	$(MAKE) ip_ooc
 	vivado -mode batch -source tcls/run-synth.tcl -nolog -nojournal 
 
-impl: synth
-	@echo Implementating the project
+impl:
+	@echo Implementing existing synthesized Vivado project and generating bitstream
 	vivado -mode batch -source tcls/run-impl.tcl -nolog -nojournal
 
 
