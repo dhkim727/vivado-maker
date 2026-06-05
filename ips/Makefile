@@ -6,12 +6,14 @@
 # Versions 
 
 
-BOARD          ?= board1
+
+BOARD          ?= m1p
+#BOARD          ?= board1
 #BOARD          ?= board2
 #BOARD          ?= board3
  
 
-export VIVADO_VERSION  ?=2023.2
+export VIVADO_VERSION  ?=2025.2
 # VIVADO_VERSION  ?=2020.2
 
 include .make_ip_list.env
@@ -19,10 +21,17 @@ include .make_ip_list.env
 HLS_IP_DIR := hls-ips
 VHD_IP_DIR := vhd-ips
 
-FPGA_WORK_DIR := work-fpga
+FPGA_WORK_ROOT := work-fpga
+FPGA_WORK_DIR := $(FPGA_WORK_ROOT)/$(VIVADO_VERSION)/$(BOARD)
+
+# HDL IPs can be listed either through the legacy vhd_ips variable or the
+# generic hdl_ips variable in .make_ip_list.env. Supported source suffixes are
+# .vhd, .v, and .sv.
+hdl_ip_files := $(vhd_ips) $(hdl_ips)
 
 export HLS_IP_DIR
 export VHD_IP_DIR
+export FPGA_WORK_ROOT
 export FPGA_WORK_DIR
 
 
@@ -36,30 +45,33 @@ else ifeq  ($(BOARD), au55c)
 	XILINX_PART              := xcu55c-fsvh2892-2L-e
 	XILINX_BOARD             := xilinx.com:au55c:part0:1.0
 	CLK_PERIOD_NS            := 20
+else ifeq  ($(BOARD), m1p)
+	XILINX_PART 			 := xcku060-ffva1156-1-i
+	CLK_PERIOD_NS			 := 10
 else
 $(error Unknown board - please specify a supported FPGA board)
 endif
 
 
-hls_ips := $(addprefix $(FPGA_WORK_DIR)/, $(hls_ips))
-hls-ips-target := $(join $(addsuffix /ip/, $(addprefix $(HLS_IP_DIR)/, $(basename $(hls_ips)))), $(hls_ips))
+#hls_ips := $(addprefix $(FPGA_WORK_DIR)/, $(hls_ips))
+#hls-ips-target := $(join $(addsuffix /ip/, $(addprefix $(HLS_IP_DIR)/, $(basename $(hls_ips)))), $(hls_ips))
 
-vhd_ips := $(addprefix $(FPGA_WORK_DIR)/, $(vhd_ips))
-vhd-ips-target := $(join $(addsuffix /ip/, $(addprefix $(VHD_IP_DIR)/, $(basename $(vhd_ips)))), $(vhd_ips))
+hdl_ips := $(addprefix $(FPGA_WORK_DIR)/, $(hdl_ip_files))
+hdl-ips-target := $(join $(addsuffix /ip/, $(addprefix $(VHD_IP_DIR)/, $(basename $(hdl_ips)))), $(hdl_ips))
 
-all: $(vhd_ips) $(hls_ips)
+all: $(hdl_ips)
  
-$(hls_ips): %.vhd : $(vhd_ips)
-	mkdir -p $(FPGA_WORK_DIR)
-	@echo Generating $(@F) with Vivado Version $(VIVADO_VERSION)
-	@cd $(HLS_IP_DIR)/$(basename $(@F)) && make clean && make BOARD=$(BOARD) XILINX_PART=$(XILINX_PART) CLK_PERIOD_NS=$(CLK_PERIOD_NS) VIVADO_VERSION=$(VIVADO_VERSION)
-	@cp $(HLS_IP_DIR)/$(basename $(@F))/$(basename $(@F))/rtl/impl/ip/hdl/vhdl/$(@F:hls_%=%) $@ 
+#$(hls_ips): %.vhd : $(vhd_ips)
+#	mkdir -p $(FPGA_WORK_DIR)
+#	@echo Generating $(@F) with Vivado Version $(VIVADO_VERSION)
+#	@cd $(HLS_IP_DIR)/$(basename $(@F)) && make clean && make BOARD=$(BOARD) XILINX_PART=$(XILINX_PART) CLK_PERIOD_NS=$(CLK_PERIOD_NS) VIVADO_VERSION=$(VIVADO_VERSION)
+#	@cp $(HLS_IP_DIR)/$(basename $(@F))/$(basename $(@F))/rtl/impl/ip/hdl/vhdl/$(@F:hls_%=%) $@ 
 
 
-$(vhd_ips): %.vhd : 
+$(FPGA_WORK_DIR)/%.vhd $(FPGA_WORK_DIR)/%.v $(FPGA_WORK_DIR)/%.sv:
 	mkdir -p $(FPGA_WORK_DIR)
 	@echo Generating $(@F) with Vivado Version $(VIVADO_VERSION)
-	@cd $(VHD_IP_DIR)/$(basename $(@F)) && make clean && make BOARD=$(BOARD) XILINX_PART=$(XILINX_PART) CLK_PERIOD_NS=$(CLK_PERIOD_NS) VIVADO_VERSION=$(VIVADO_VERSION)
+	@cd $(VHD_IP_DIR)/$(basename $(@F)) && make clean && make BOARD=$(BOARD) XILINX_PART=$(XILINX_PART) CLK_PERIOD_NS=$(CLK_PERIOD_NS) VIVADO_VERSION=$(VIVADO_VERSION) HDL_SOURCE=$(@F)
 	@cp $(VHD_IP_DIR)/$(basename $(@F))/$(basename $(@F)).srcs/sources_1/imports/src/$(@F) $@
 
 clean:

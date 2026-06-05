@@ -7,12 +7,14 @@
 # implementation, bitstream generation, report generation, for target board defined
 # by the user through the $BOARD.
 # The following environment variable can be set by the user:
-BOARD          ?= au55c
+#BOARD          ?= au55c
+BOARD			?= m1p
+DESIGN			?= main_design
 #BOARD          ?= board2
 #BOARD          ?= board3
-export VIVADO_VERSION  ?=2023.2
+export VIVADO_VERSION  ?=2025.2
 # VIVADO_VERSION  ?=2020.2
-HDL_LANGUAGE    ?= VHDL
+HDL_LANGUAGE    ?= VERILOG
 OOC_JOBS        ?= 16
 # setting additional xilinx board parameters for the selected board
 ifeq ($(BOARD), board1)
@@ -25,7 +27,9 @@ else ifeq  ($(BOARD), au55c)
 	XILINX_PART              := xcu55c-fsvh2892-2L-e
 	XILINX_BOARD             := xilinx.com:au55c:part0:1.0
 	CLK_PERIOD_NS            := 20
-
+else ifeq  ($(BOARD), m1p)
+	XILINX_PART 			 := xcku060-ffva1156-1-i
+	CLK_PERIOD_NS			 := 10
 else
 $(error Unknown board - please specify a supported FPGA board)
 endif
@@ -40,13 +44,22 @@ export ROOT_PATH   := $(dir $(MKFILE_PATH))
 
 HLS_IP_DIR := hls-ips
 VHD_IP_DIR := vhd-ips
-VIVADO_WORK_DIR := vivado-prj
+VIVADO_WORK_ROOT := vivado-prj
+VIVADO_WORK_DIR := $(VIVADO_WORK_ROOT)/$(BOARD)/$(DESIGN)
+VIVADO_PROJECT_NAME := $(BOARD)-$(DESIGN)-vivado
+BD_TCL_DIR := tcls/bd/$(BOARD)/$(DESIGN)
+BD_TCL_FILE := $(BD_TCL_DIR)/design-bd-src.tcl
 
 export HLS_IP_DIR
 export VHD_IP_DIR
 export XILINX_PART
 export BOARD
+export DESIGN
+export VIVADO_WORK_ROOT
 export VIVADO_WORK_DIR
+export VIVADO_PROJECT_NAME
+export BD_TCL_DIR
+export BD_TCL_FILE
 export HDL_LANGUAGE
 export OOC_JOBS
 
@@ -57,14 +70,16 @@ vivado: custom_ips
 	@mkdir -p ${VIVADO_WORK_DIR}
 	@cd ${VIVADO_WORK_DIR} 
 	vivado -mode batch -source tcls/run-vivado-prj.tcl  -nolog -nojournal 
-	@mkdir -p ${VIVADO_WORK_DIR}/${BOARD}-vivado.srcs/sources_1/bd/main_design/ui
-	@cp srcs/stored_ui/* ${VIVADO_WORK_DIR}/${BOARD}-vivado.srcs/sources_1/bd/main_design/ui/
+	@mkdir -p ${VIVADO_WORK_DIR}/${VIVADO_PROJECT_NAME}.srcs/sources_1/bd/${DESIGN}/ui
+	@if [ -d srcs/stored_ui/${BOARD}/${DESIGN} ]; then cp srcs/stored_ui/${BOARD}/${DESIGN}/* ${VIVADO_WORK_DIR}/${VIVADO_PROJECT_NAME}.srcs/sources_1/bd/${DESIGN}/ui/ 2>/dev/null || true; fi
 
 update_tcl:
-	@echo Updating the tcls/design-bd-src.tcl
+	@echo Updating ${BD_TCL_FILE}
 	@cd ${VIVADO_WORK_DIR}
-	cp ${VIVADO_WORK_DIR}/${BOARD}-vivado.srcs/sources_1/bd/main_design/main_design.bd srcs/bd_old/
-	cp ${VIVADO_WORK_DIR}/${BOARD}-vivado.srcs/sources_1/bd/main_design/ui/* srcs/stored_ui/
+	@mkdir -p srcs/bd_old/${BOARD}/${DESIGN}
+	@mkdir -p srcs/stored_ui/${BOARD}/${DESIGN}
+	cp ${VIVADO_WORK_DIR}/${VIVADO_PROJECT_NAME}.srcs/sources_1/bd/${DESIGN}/${DESIGN}.bd srcs/bd_old/${BOARD}/${DESIGN}/
+	@if [ -d ${VIVADO_WORK_DIR}/${VIVADO_PROJECT_NAME}.srcs/sources_1/bd/${DESIGN}/ui ]; then cp ${VIVADO_WORK_DIR}/${VIVADO_PROJECT_NAME}.srcs/sources_1/bd/${DESIGN}/ui/* srcs/stored_ui/${BOARD}/${DESIGN}/ 2>/dev/null || true; fi
 	vivado -mode batch -source tcls/gen-bd-tcl.tcl  -nolog -nojournal
 
 ip_ooc: vivado
@@ -85,10 +100,10 @@ impl: synth
 
 hdf:
 	@echo Exporting HDF file ....
-	@test -s ${VIVADO_WORK_DIR}/${BOARD}-vivado.runs/impl_1/main_design_wrapper.sysdef || { echo "system definistion file does not exist! Exiting..."; false; } && \
-                 mkdir -p ${VIVADO_WORK_DIR}/${BOARD}-vivado.sdk && \
-                 cp ${VIVADO_WORK_DIR}/${BOARD}-vivado.runs/impl_1/main_design_wrapper.sysdef ${VIVADO_WORK_DIR}/${BOARD}-vivado.sdk/main_design_wrapper.hdf
-	@echo HDF file is created as ${VIVADO_WORK_DIR}/${BOARD}-vivado.sdk/main_design_wrapper.hdf
+	@test -s ${VIVADO_WORK_DIR}/${VIVADO_PROJECT_NAME}.runs/impl_1/${DESIGN}_wrapper.sysdef || { echo "system definistion file does not exist! Exiting..."; false; } && \
+	                 mkdir -p ${VIVADO_WORK_DIR}/${VIVADO_PROJECT_NAME}.sdk && \
+	                 cp ${VIVADO_WORK_DIR}/${VIVADO_PROJECT_NAME}.runs/impl_1/${DESIGN}_wrapper.sysdef ${VIVADO_WORK_DIR}/${VIVADO_PROJECT_NAME}.sdk/${DESIGN}_wrapper.hdf
+	@echo HDF file is created as ${VIVADO_WORK_DIR}/${VIVADO_PROJECT_NAME}.sdk/${DESIGN}_wrapper.hdf
 
 
 custom_ips:

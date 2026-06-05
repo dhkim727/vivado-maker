@@ -7,15 +7,21 @@
 namespace eval ::FM {
 
 	variable VIVADO_PROJECT
+	variable VIVADO_PROJECT_NAME
 	variable PART_NAME
 	variable BOARD_NAME
+	variable DESIGN_NAME
+	variable BD_TCL_FILE
 	variable HDL_LANGUAGE
 	variable OOC_MAX_JOBS
 
 	proc print_gvars {} {
       		put $FM::VIVADO_PROJECT
+		put $FM::VIVADO_PROJECT_NAME
       		put $FM::PART_NAME
       		put $FM::BOARD_NAME
+		put $FM::DESIGN_NAME
+		put $FM::BD_TCL_FILE
       		put $FM::HDL_LANGUAGE
       		put $FM::OOC_MAX_JOBS
 	}
@@ -24,17 +30,17 @@ namespace eval ::FM {
 	 # Out of Context (OOC) output products for each IP that is used in the bd design.
 	proc run_ooc_ips {} {
 	    
-	    if {[file exists $FM::VIVADO_PROJECT/$FM::BOARD_NAME-vivado.srcs/sources_1/bd/main_design/ip]} {
+	    if {[file exists $FM::VIVADO_PROJECT/$FM::VIVADO_PROJECT_NAME.srcs/sources_1/bd/$FM::DESIGN_NAME/ip]} {
 	        update_compile_order -fileset sources_1
 	        catch {set ip_names [get_ips]}
 	        set i 0
 	         foreach ip $ip_names {
 		           ## gets IPs name as they are instantiated, and the corresponding *.xci files are generated. 
-		           if {[file exists $FM::VIVADO_PROJECT/$FM::BOARD_NAME-vivado.srcs/sources_1/bd/main_design/ip/${ip}/${ip}.xci] && 
-		               ![file exists $FM::VIVADO_PROJECT/$FM::BOARD_NAME-vivado.runs/${ip}_synth_1/runme.log]  } {
+		           if {[file exists $FM::VIVADO_PROJECT/$FM::VIVADO_PROJECT_NAME.srcs/sources_1/bd/$FM::DESIGN_NAME/ip/${ip}/${ip}.xci] && 
+		               ![file exists $FM::VIVADO_PROJECT/$FM::VIVADO_PROJECT_NAME.runs/${ip}_synth_1/runme.log]  } {
 		           	put "Run OOC (Out of Context) IP for: $ip"
 		             if {[get_property generate_synth_checkpoint [get_files ${ip}.xci]] == 1 && [get_property is_enabled [get_files ${ip}.xci]] == 1} {
-		               create_ip_run [get_files -of_objects [get_fileset sources_1] $FM::VIVADO_PROJECT/$FM::BOARD_NAME-vivado.srcs/sources_1/bd/main_design/ip/${ip}/${ip}.xci]  
+		               create_ip_run [get_files -of_objects [get_fileset sources_1] $FM::VIVADO_PROJECT/$FM::VIVADO_PROJECT_NAME.srcs/sources_1/bd/$FM::DESIGN_NAME/ip/${ip}/${ip}.xci]  
 		               # it is important to reset the synth_1 before launching the run.
 			       reset_run ${ip}_synth_1
 			       launch_run -jobs 8 ${ip}_synth_1  
@@ -51,12 +57,12 @@ namespace eval ::FM {
 	}
 
 	proc read_xci {} {
-                if {[file exists $FM::VIVADO_PROJECT/$FM::BOARD_NAME-vivado.srcs/sources_1/bd/main_design/ip]} {
+	                if {[file exists $FM::VIVADO_PROJECT/$FM::VIVADO_PROJECT_NAME.srcs/sources_1/bd/$FM::DESIGN_NAME/ip]} {
                         update_compile_order -fileset sources_1
                         catch {set ip_names [get_ips]}
                         foreach ip $ip_names {
                                 put ${ip}
-                                read_ip $FM::VIVADO_PROJECT/$FM::BOARD_NAME-vivado.srcs/sources_1/bd/main_design/ip/${ip}/${ip}.xci
+	                                read_ip $FM::VIVADO_PROJECT/$FM::VIVADO_PROJECT_NAME.srcs/sources_1/bd/$FM::DESIGN_NAME/ip/${ip}/${ip}.xci
                         }
                 }
         }
@@ -83,8 +89,11 @@ namespace eval ::FM {
 }
 
 set FM::VIVADO_PROJECT $::env(VIVADO_WORK_DIR)
+set FM::VIVADO_PROJECT_NAME $::env(VIVADO_PROJECT_NAME)
 set FM::PART_NAME $::env(XILINX_PART)
 set FM::BOARD_NAME $::env(BOARD)
+set FM::DESIGN_NAME $::env(DESIGN)
+set FM::BD_TCL_FILE $::env(BD_TCL_FILE)
 set FM::HDL_LANGUAGE $::env(HDL_LANGUAGE) 
 set FM::OOC_MAX_JOBS $::env(OOC_JOBS) 
 

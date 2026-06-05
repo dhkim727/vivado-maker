@@ -9,7 +9,7 @@
 ##################################################################################
 source tcls/settings.tcl
 
-set project $FM::BOARD_NAME-vivado 
+set project $FM::VIVADO_PROJECT_NAME 
 create_project $project $FM::VIVADO_PROJECT/ -force -part $FM::PART_NAME
 set_param general.maxThreads 8
 set_property target_language $FM::HDL_LANGUAGE [current_project]
@@ -31,6 +31,8 @@ if {$FM::BOARD_NAME == "board1"} {
       add_files -fileset constrs_1 -norecurse constraints/board2_constraints.xdc
 } elseif {$FM::BOARD_NAME == "au55c"} {
       add_files -fileset constrs_1 -norecurse constraints/U55C_xdc_1v00.xdc
+} elseif {$FM::BOARD_NAME == "m1p"} {
+      add_files -fileset constrs_1 -norecurse constraints/m1p_constraints.xdc
 } else {
 	exit 1
 }      	        
@@ -41,10 +43,12 @@ set_property  ip_repo_paths  { \
                               } [current_fileset]
 update_ip_catalog
 
-# if your poroject has a block design, please add 
-# its tcl file here:
-#building the block design. 
-source tcls/design-bd-src.tcl
+# If your project has a block design, source the board/design-specific BD Tcl here.
+if {![file exists $FM::BD_TCL_FILE]} {
+      catch {common::send_msg_id "FM-001" "ERROR" "Board/design-specific BD Tcl does not exist: $FM::BD_TCL_FILE"}
+      exit 1
+}
+source $FM::BD_TCL_FILE
 
 
 #if your project has HDL_LANGUAGE libraries please add here with the specific tcl proc that we defined: 
@@ -61,11 +65,11 @@ source tcls/design-bd-src.tcl
 # set_property top <the entity name of your top module hdl code> [current_fileset]
 
 # if your design contains block design, it is better to automatically create the wrapper for it and make it top module:
-make_wrapper -files [get_files $FM::VIVADO_PROJECT/$FM::BOARD_NAME-vivado.srcs/sources_1/bd/main_design/main_design.bd] -top
+make_wrapper -files [get_files $FM::VIVADO_PROJECT/$FM::VIVADO_PROJECT_NAME.srcs/sources_1/bd/$FM::DESIGN_NAME/$FM::DESIGN_NAME.bd] -top
 if {[get_property target_language [current_project]] eq "VHDL"} {
-      add_files -norecurse  $FM::VIVADO_PROJECT/$FM::BOARD_NAME-vivado.srcs/sources_1/bd/main_design/hdl/main_design_wrapper.vhd
+      add_files -norecurse  $FM::VIVADO_PROJECT/$FM::VIVADO_PROJECT_NAME.srcs/sources_1/bd/$FM::DESIGN_NAME/hdl/${FM::DESIGN_NAME}_wrapper.vhd
 } else {
-      add_files -norecurse  $FM::VIVADO_PROJECT/$FM::BOARD_NAME-vivado.srcs/sources_1/bd/main_design/hdl/main_design_wrapper.v
+      add_files -norecurse  $FM::VIVADO_PROJECT/$FM::VIVADO_PROJECT_NAME.srcs/sources_1/bd/$FM::DESIGN_NAME/hdl/${FM::DESIGN_NAME}_wrapper.v
 }
 update_compile_order -fileset sources_1
 

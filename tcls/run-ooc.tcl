@@ -4,15 +4,15 @@
 # DESCRIPTION: 
 # This tcl file is responsible to generate the output products of the 
 # included IPs into the Block Design of the vivado project. Their
-# appropriate report files based on the specified board (i.e., BOARD)
-# will be generated consequently, into the $BOARD-vivado.runs/$(ip) folder
+# appropriate output products based on the specified board/design will be
+# generated consequently into the project runs folder.
 ##############################################################################
 source tcls/settings.tcl
 
 # check if the project is not opened, then open it
 set list_projs [get_projects -quiet]
 if { $list_projs eq "" } {
-    open_project $FM::VIVADO_PROJECT/$FM::BOARD_NAME-vivado.xpr
+    open_project $FM::VIVADO_PROJECT/$FM::VIVADO_PROJECT_NAME.xpr
 }
 
 set_param general.maxThreads 8

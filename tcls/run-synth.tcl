@@ -10,7 +10,7 @@ source tcls/settings.tcl
 # check if the project is not opened, then open it
 set list_projs [get_projects -quiet]
 if { $list_projs eq "" } {
-    open_project $FM::VIVADO_PROJECT/$FM::BOARD_NAME-vivado.xpr
+    open_project $FM::VIVADO_PROJECT/$FM::VIVADO_PROJECT_NAME.xpr
 }
 
 
@@ -38,13 +38,14 @@ wait_on_run synth_1
 
 open_run synth_1
 
-file mkdir -force reports/
-file delete -force reports/*
+set report_dir $FM::VIVADO_PROJECT/reports
+file mkdir -force $report_dir
+file delete -force $report_dir/*
 
-check_timing -verbose                                                   -file reports/$FM::BOARD_NAME.check_timing.rpt
-report_timing -max_paths 100 -nworst 100 -delay_type max -sort_by slack -file reports/$FM::BOARD_NAME.timing_WORST_100.rpt
-report_timing -nworst 1 -delay_type max -sort_by group                  -file reports/$FM::BOARD_NAME.timing.rpt
-report_utilization -hierarchical                                        -file reports/$FM::BOARD_NAME.utilization.rpt
-report_cdc                                                              -file reports/$FM::BOARD_NAME.cdc.rpt
+check_timing -verbose                                                   -file $report_dir/check_timing.rpt
+report_timing -max_paths 100 -nworst 100 -delay_type max -sort_by slack -file $report_dir/timing_WORST_100.rpt
+report_timing -nworst 1 -delay_type max -sort_by group                  -file $report_dir/timing.rpt
+report_utilization -hierarchical                                        -file $report_dir/utilization.rpt
+report_cdc                                                              -file $report_dir/cdc.rpt
 report_clock_interaction  
 ###########################################################################################################################
