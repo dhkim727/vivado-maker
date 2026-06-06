@@ -37,8 +37,9 @@ VHD_IP_DIR := vhd-ips
 VIVADO_WORK_ROOT := vivado-prj
 VIVADO_WORK_DIR := $(VIVADO_WORK_ROOT)/$(BOARD)/$(DESIGN)
 VIVADO_PROJECT_NAME := $(BOARD)-$(DESIGN)-vivado
-BD_TCL_DIR := tcls/bd/$(BOARD)/$(DESIGN)
-BD_TCL_FILE := $(BD_TCL_DIR)/design-bd-src.tcl
+VIVADO_PROJECT_DIR := $(VIVADO_WORK_DIR)/$(VIVADO_PROJECT_NAME)
+PROJECT_TCL_DIR := tcls/project/$(BOARD)/$(DESIGN)
+PROJECT_TCL_FILE := $(PROJECT_TCL_DIR)/project-src.tcl
 
 export HLS_IP_DIR
 export VHD_IP_DIR
@@ -48,8 +49,9 @@ export DESIGN
 export VIVADO_WORK_ROOT
 export VIVADO_WORK_DIR
 export VIVADO_PROJECT_NAME
-export BD_TCL_DIR
-export BD_TCL_FILE
+export VIVADO_PROJECT_DIR
+export PROJECT_TCL_DIR
+export PROJECT_TCL_FILE
 export HDL_LANGUAGE
 export OOC_JOBS
 
@@ -63,17 +65,19 @@ vivado: custom_ips
 	@mkdir -p ${VIVADO_WORK_DIR}
 	@cd ${VIVADO_WORK_DIR} 
 	vivado -mode batch -source tcls/run-vivado-prj.tcl  -nolog -nojournal 
-	@mkdir -p ${VIVADO_WORK_DIR}/${VIVADO_PROJECT_NAME}.srcs/sources_1/bd/${DESIGN}/ui
-	@if [ -d srcs/stored_ui/${BOARD}/${DESIGN} ]; then cp srcs/stored_ui/${BOARD}/${DESIGN}/* ${VIVADO_WORK_DIR}/${VIVADO_PROJECT_NAME}.srcs/sources_1/bd/${DESIGN}/ui/ 2>/dev/null || true; fi
+	@mkdir -p ${VIVADO_PROJECT_DIR}/${VIVADO_PROJECT_NAME}.srcs/sources_1/bd/${DESIGN}/ui
+	@if [ -d srcs/stored_ui/${BOARD}/${DESIGN} ]; then cp srcs/stored_ui/${BOARD}/${DESIGN}/* ${VIVADO_PROJECT_DIR}/${VIVADO_PROJECT_NAME}.srcs/sources_1/bd/${DESIGN}/ui/ 2>/dev/null || true; fi
 
 update_tcl:
-	@echo Updating ${BD_TCL_FILE}
+	@echo Updating ${PROJECT_TCL_FILE}
 	@cd ${VIVADO_WORK_DIR}
+	@mkdir -p ${PROJECT_TCL_DIR}
+	@mkdir -p srcs/bd/${BOARD}/${DESIGN}
 	@mkdir -p srcs/bd_old/${BOARD}/${DESIGN}
 	@mkdir -p srcs/stored_ui/${BOARD}/${DESIGN}
-	cp ${VIVADO_WORK_DIR}/${VIVADO_PROJECT_NAME}.srcs/sources_1/bd/${DESIGN}/${DESIGN}.bd srcs/bd_old/${BOARD}/${DESIGN}/
-	@if [ -d ${VIVADO_WORK_DIR}/${VIVADO_PROJECT_NAME}.srcs/sources_1/bd/${DESIGN}/ui ]; then cp ${VIVADO_WORK_DIR}/${VIVADO_PROJECT_NAME}.srcs/sources_1/bd/${DESIGN}/ui/* srcs/stored_ui/${BOARD}/${DESIGN}/ 2>/dev/null || true; fi
-	vivado -mode batch -source tcls/gen-bd-tcl.tcl  -nolog -nojournal
+	@if [ -f ${VIVADO_PROJECT_DIR}/${VIVADO_PROJECT_NAME}.srcs/sources_1/bd/${DESIGN}/${DESIGN}.bd ]; then cp ${VIVADO_PROJECT_DIR}/${VIVADO_PROJECT_NAME}.srcs/sources_1/bd/${DESIGN}/${DESIGN}.bd srcs/bd_old/${BOARD}/${DESIGN}/; elif [ -f ${VIVADO_WORK_DIR}/${VIVADO_PROJECT_NAME}.srcs/sources_1/bd/${DESIGN}/${DESIGN}.bd ]; then cp ${VIVADO_WORK_DIR}/${VIVADO_PROJECT_NAME}.srcs/sources_1/bd/${DESIGN}/${DESIGN}.bd srcs/bd_old/${BOARD}/${DESIGN}/; fi
+	@if [ -d ${VIVADO_PROJECT_DIR}/${VIVADO_PROJECT_NAME}.srcs/sources_1/bd/${DESIGN}/ui ]; then cp ${VIVADO_PROJECT_DIR}/${VIVADO_PROJECT_NAME}.srcs/sources_1/bd/${DESIGN}/ui/* srcs/stored_ui/${BOARD}/${DESIGN}/ 2>/dev/null || true; elif [ -d ${VIVADO_WORK_DIR}/${VIVADO_PROJECT_NAME}.srcs/sources_1/bd/${DESIGN}/ui ]; then cp ${VIVADO_WORK_DIR}/${VIVADO_PROJECT_NAME}.srcs/sources_1/bd/${DESIGN}/ui/* srcs/stored_ui/${BOARD}/${DESIGN}/ 2>/dev/null || true; fi
+	vivado -mode batch -source tcls/gen-project-tcl.tcl  -nolog -nojournal
 
 ip_ooc:
 	@echo Running IP OOC for existing Vivado project
