@@ -79,6 +79,16 @@
 */*/bd/*/hdl
 */*/*/bd/*/hdl
 
+### repository-local Vivado generated artifacts
+srcs/bd/*/*/ip/
+srcs/bd/*/*/ui/
+srcs/bd/**/*.bda
+srcs/bd_old/*/*/*
+!srcs/bd_old/*/*/.gitkeep
+srcs/stored_ui/*/*/*
+!srcs/stored_ui/*/*/.gitkeep
+srcs/dcp/
+
 */*/bd/*/*.xdc
 */*/*/bd/*/*.xdc
 
